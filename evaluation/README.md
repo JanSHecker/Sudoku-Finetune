@@ -115,6 +115,13 @@ closed before the JSON target so its training format matches the evaluator.
 
 ## Deduction Dataset
 
+The public `sudoku-generator/` crate emits uniquely solvable puzzle TSV and
+metadata. The `--trace` commands below document the historical trace-capable
+generator used to produce the existing experiment artifacts; that larger
+deduction engine is not included in this checkout. The generated artifacts are
+ignored from Git, so use the preserved metadata and reports only as experiment
+context unless a trace-capable generator is supplied.
+
 The Rust generator can emit replayable logical traces. The trace format includes
 the complete candidate state before and after each deduction and all deductions
 available at that state:

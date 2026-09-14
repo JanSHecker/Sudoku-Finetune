@@ -91,7 +91,7 @@ cargo run --release -- --count 10 --seed 42 --min-score 1000 --output puzzles.ts
 The larger trace artifacts described below were generated during the original
 experiment and are intentionally ignored from the public source repository.
 
-The supported rule families are:
+The historical trace-capable engine used for the results below supported:
 
 - naked and hidden singles;
 - naked and hidden pairs, triples, and quads;
