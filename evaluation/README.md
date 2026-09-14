@@ -1,7 +1,7 @@
 # Sudoku Deduction Evaluation
 
 This evaluation measures `Qwen/Qwen3.5-2B` and `LiquidAI/LFM2.5-2.6B` on
-structured Sudoku deductions. It does not load the BANKING77 LoRA adapter.
+structured Sudoku deductions.
 
 ## Build The Evaluation Set
 

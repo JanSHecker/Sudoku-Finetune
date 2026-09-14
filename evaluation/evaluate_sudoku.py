@@ -1,6 +1,6 @@
 """Evaluate the pinned 4-bit Qwen3.5-2B model on Sudoku.
 
-This evaluator is intentionally independent of the BANKING77 adapter pipeline:
+This evaluator is intentionally independent of the training pipeline:
 it loads the base checkpoint only, uses a frozen zero-shot prompt, and writes
 raw per-example predictions so formatting failures remain inspectable.
 """
