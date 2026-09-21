@@ -45,17 +45,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path("artifacts/sudoku-deduction-benchmark-v1.jsonl"),
+        default=Path("artifacts/datasets/validation/deduction/sudoku-deduction-benchmark-v1.jsonl"),
     )
     parser.add_argument(
         "--predictions",
         type=Path,
-        default=Path("artifacts/sudoku-deduction-benchmark-v1.predictions.jsonl"),
+        default=Path("artifacts/results/validation/deduction/sudoku-deduction-benchmark-v1.predictions.jsonl"),
     )
     parser.add_argument(
         "--metrics",
         type=Path,
-        default=Path("artifacts/sudoku-deduction-benchmark-v1.metrics.json"),
+        default=Path("artifacts/results/validation/deduction/sudoku-deduction-benchmark-v1.metrics.json"),
     )
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--limit", type=int)
@@ -541,6 +541,7 @@ def main() -> None:
         "schema": "sudoku-deduction-metrics-v1",
         "dataset": str(args.dataset),
         "dataset_sha256": dataset_hash,
+        "predictions": str(args.predictions),
         "provider": args.provider,
         "model_id": model_id,
         "model_revision": revision,

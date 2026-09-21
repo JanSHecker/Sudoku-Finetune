@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Evidence-led journey through the Sudoku fine-tuning experiment.">
+  <title>The reasoning gap | Fine-tuning journey</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+    :root {
+      --night: #101820;
+      --night-2: #16232d;
+      --ink: #17232c;
+      --muted: #71818b;
+      --paper: #f4f2ec;
+      --card: #fbfaf6;
+      --line: #d8dedb;
+      --cyan: #2bb7b0;
+      --cyan-dark: #177d7a;
+      --coral: #f07855;
+      --yellow: #f4c95d;
+      --violet: #7868e6;
+      --shadow: 0 18px 45px rgba(8, 22, 31, .08);
+      --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+      --body: 'Space Grotesk', system-ui, sans-serif;
+      --display: 'DM Serif Display', Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--body);
+      background-image: linear-gradient(rgba(22, 35, 45, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(22, 35, 45, .035) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    .mono { font-family: var(--mono); }
+    .eyebrow { color: var(--coral); font: 600 .7rem var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+
+    .shell { display: grid; grid-template-columns: 235px minmax(0, 1fr); min-height: 100vh; }
+    .rail {
+      position: sticky; top: 0; align-self: start; height: 100vh; padding: 25px 22px;
+      color: #e9f1f1; background: var(--night); overflow: hidden;
+    }
+    .rail::after { content: ''; position: absolute; width: 180px; height: 180px; right: -90px; bottom: 55px; border: 1px solid rgba(43, 183, 176, .28); border-radius: 50%; box-shadow: 0 0 0 24px rgba(43, 183, 176, .04), 0 0 0 48px rgba(43, 183, 176, .04); }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 56px; font-weight: 700; letter-spacing: -.02em; }
+    .brand-mark { display: grid; place-items: center; width: 27px; height: 27px; color: var(--night); background: var(--cyan); border-radius: 7px 7px 7px 2px; font: 600 .85rem var(--mono); }
+    .rail-label { margin: 0 0 13px; color: #76909a; font: 500 .65rem var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .rail nav { display: grid; gap: 7px; }
+    .rail nav a { display: grid; grid-template-columns: 30px 1fr; gap: 8px; align-items: center; padding: 8px 0; color: #a8babf; text-decoration: none; font-size: .82rem; }
+    .rail nav a:hover, .rail nav a:focus { color: #fff; }
+    .rail nav .index { color: var(--coral); font: .68rem var(--mono); }
+    .rail-note { position: absolute; right: 22px; bottom: 25px; left: 22px; padding-top: 15px; border-top: 1px solid #2b3d47; color: #8fa4aa; font-size: .74rem; line-height: 1.45; }
+    .rail-note strong { display: block; margin-bottom: 5px; color: #e9f1f1; font-size: .75rem; }
+
+    main { min-width: 0; padding: 25px clamp(22px, 4vw, 68px) 80px; }
+    .topline { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: var(--muted); font: .67rem var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+    .live { display: inline-flex; align-items: center; gap: 8px; color: var(--cyan-dark); }
+    .live::before { content: ''; width: 7px; height: 7px; background: var(--cyan); border-radius: 50%; box-shadow: 0 0 0 4px rgba(43, 183, 176, .13); }
+
+    .hero { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr); gap: clamp(25px, 5vw, 90px); align-items: end; padding: clamp(48px, 9vw, 110px) 0 62px; }
+    h1 { max-width: 750px; margin: 13px 0 20px; font: 400 clamp(3.3rem, 7.1vw, 7.3rem)/.88 var(--display); letter-spacing: -.065em; }
+    .hero-copy { max-width: 610px; margin: 0; color: #50626b; font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.55; }
+    .hero-copy em { color: var(--ink); font-family: var(--display); font-size: 1.12em; }
+    .hero-stat { position: relative; padding: 25px; color: #edf6f4; background: var(--night); box-shadow: var(--shadow); overflow: hidden; }
+    .hero-stat::before { content: '↗'; position: absolute; top: -43px; right: -8px; color: rgba(43, 183, 176, .24); font: 170px/.9 var(--display); }
+    .hero-stat .label { position: relative; color: #8fa7ae; font: .67rem var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+    .hero-stat .big { position: relative; margin: 12px 0 4px; color: var(--cyan); font: 500 clamp(3rem, 6vw, 5.5rem)/.9 var(--mono); letter-spacing: -.1em; }
+    .hero-stat p { position: relative; max-width: 245px; margin: 17px 0 0; color: #b3c3c6; font-size: .82rem; line-height: 1.45; }
+    .hero-stat .arrow { color: var(--coral); }
+
+    .rule { height: 1px; margin: 0 0 38px; background: var(--line); }
+    .section { scroll-margin-top: 28px; margin: 0 0 75px; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 25px; margin-bottom: 20px; }
+    h2 { margin: 0; font-size: clamp(1.45rem, 2.6vw, 2.2rem); letter-spacing: -.05em; }
+    h3 { margin: 0; font-size: 1.04rem; letter-spacing: -.03em; }
+    .section-head p { max-width: 475px; margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.45; text-align: right; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .metric-card { min-height: 145px; padding: 19px; background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--cyan); box-shadow: 0 4px 18px rgba(17, 31, 39, .03); }
+    .metric-card.warn { border-top-color: var(--coral); }
+    .metric-card .metric-label { color: var(--muted); font: .65rem var(--mono); letter-spacing: .09em; line-height: 1.25; text-transform: uppercase; }
+    .metric-card .value { margin: 14px 0 5px; font: 500 clamp(1.8rem, 3vw, 2.8rem)/1 var(--mono); letter-spacing: -.09em; }
+    .metric-card.warn .value { color: var(--coral); }
+    .metric-card .detail { color: var(--muted); font-size: .72rem; }
+    .metric-card .detail strong { color: var(--ink); font-weight: 600; }
+
+    .panel { background: rgba(251, 250, 246, .82); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .panel-pad { padding: clamp(18px, 3vw, 30px); }
+    .chart-panel { overflow: hidden; }
+    .chart-title { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+    .chart-title p { margin: 5px 0 0; color: var(--muted); font-size: .75rem; line-height: 1.4; }
+    .legend { display: flex; flex-wrap: wrap; justify-content: end; gap: 12px; color: var(--muted); font: .62rem var(--mono); }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; }
+    .outcome-chart { display: grid; grid-template-columns: 34px 1fr; gap: 9px; min-height: 280px; }
+    .y-axis { display: flex; flex-direction: column; justify-content: space-between; padding: 1px 0 28px; color: #93a0a3; font: .6rem var(--mono); text-align: right; }
+    .bars { display: grid; grid-template-columns: repeat(5, 1fr); align-items: stretch; gap: clamp(8px, 2vw, 24px); padding: 0 0 0; background: repeating-linear-gradient(to bottom, transparent 0, transparent calc(25% - 1px), #e2e6e2 calc(25% - 1px), #e2e6e2 25%); border-bottom: 1px solid #bdc8c5; }
+    .bar-group { display: grid; grid-template-rows: 1fr auto; min-width: 0; }
+    .bar-space { display: flex; align-items: end; justify-content: center; min-height: 220px; }
+    .bar { position: relative; width: min(56px, 72%); min-height: 3px; background: var(--cyan); border-radius: 3px 3px 0 0; animation: rise .75s ease both; transform-origin: bottom; }
+    .bar.bad { background: var(--coral); }
+    .bar::before { content: attr(data-value); position: absolute; top: -23px; left: 50%; color: var(--ink); font: 600 .62rem var(--mono); transform: translateX(-50%); white-space: nowrap; }
+    .bar-group:nth-child(1) .bar { animation-delay: .05s; }
+    .bar-group:nth-child(2) .bar { animation-delay: .12s; }
+    .bar-group:nth-child(3) .bar { animation-delay: .19s; }
+    .bar-group:nth-child(4) .bar { animation-delay: .26s; }
+    .bar-group:nth-child(5) .bar { animation-delay: .33s; }
+    .bar-label { min-height: 35px; padding-top: 9px; color: var(--muted); font: .6rem/1.25 var(--mono); text-align: center; }
+    @keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    .chart-foot { display: flex; justify-content: space-between; gap: 18px; margin-top: 17px; color: var(--muted); font-size: .72rem; line-height: 1.4; }
+    .chart-foot strong { color: var(--ink); }
+
+    .two-col { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); gap: 16px; }
+    .reason-card { padding: 23px; background: var(--night); color: #edf3f1; }
+    .reason-card .eyebrow { color: var(--yellow); }
+    .reason-card h3 { margin: 9px 0 13px; color: #fff; font-size: 1.28rem; }
+    .reason-card p { margin: 0; color: #afbec0; font-size: .84rem; line-height: 1.55; }
+    .reason-card blockquote { margin: 20px 0 0; padding: 13px 15px; border-left: 2px solid var(--cyan); color: #d8e6e4; font: .79rem/1.5 var(--mono); }
+    .reason-card blockquote strong { color: var(--cyan); }
+    .definition { padding: 23px; background: var(--yellow); }
+    .definition h3 { margin-bottom: 12px; }
+    .definition p { margin: 0; color: #584b1f; font-size: .83rem; line-height: 1.55; }
+    .definition .formula { margin-top: 17px; color: #6c591a; font: .72rem/1.7 var(--mono); }
+
+    .timeline { position: relative; display: grid; gap: 18px; }
+    .timeline::before { content: ''; position: absolute; top: 14px; bottom: 14px; left: 17px; width: 1px; background: #becbc8; }
+    .step { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 18px; }
+    .step-dot { position: relative; z-index: 1; display: grid; place-items: center; width: 35px; height: 35px; color: var(--night); background: var(--cyan); border: 6px solid var(--paper); border-radius: 50%; font: 600 .57rem var(--mono); }
+    .step:nth-child(2) .step-dot, .step:nth-child(3) .step-dot { background: var(--coral); }
+    .step:nth-child(4) .step-dot { background: var(--violet); color: #fff; }
+    .step-body { padding: 21px 23px; background: var(--card); border: 1px solid var(--line); }
+    .step-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 16px; margin-bottom: 8px; }
+    .step-meta .date { color: var(--muted); font: .64rem var(--mono); text-transform: uppercase; }
+    .tag { padding: 4px 7px; color: var(--cyan-dark); background: #dff2ef; font: 600 .59rem var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+    .tag.coral { color: #99452f; background: #fbe5dc; }
+    .tag.violet { color: #5044a2; background: #e8e4ff; }
+    .step-body h3 { margin-bottom: 8px; font-size: 1.2rem; }
+    .step-body p { max-width: 800px; margin: 0; color: #5e7077; font-size: .84rem; line-height: 1.55; }
+    .step-result { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 17px; padding-top: 13px; border-top: 1px solid #e5e8e3; }
+    .result { color: var(--muted); font: .63rem var(--mono); }
+    .result strong { display: block; margin-bottom: 3px; color: var(--ink); font-size: .82rem; }
+    .result strong.good { color: var(--cyan-dark); }
+    .result strong.bad { color: var(--coral); }
+
+    .heatmap-grid { display: grid; grid-template-columns: 110px repeat(4, minmax(45px, 1fr)); gap: 4px; align-items: stretch; }
+    .heat-label { display: flex; align-items: center; color: var(--muted); font: .62rem var(--mono); }
+    .heat-head { padding-bottom: 8px; color: var(--muted); font: .6rem var(--mono); text-align: center; }
+    .heat-cell { display: grid; place-items: center; min-height: 42px; color: var(--ink); background: color-mix(in srgb, var(--cyan) calc(var(--v) * 1%), #eaf0ed); font: 600 .66rem var(--mono); }
+    .heat-cell.hot { color: #fff; background: color-mix(in srgb, var(--coral) calc(var(--v) * 1%), #fbebe5); }
+    .heat-caption { margin: 15px 0 0 110px; color: var(--muted); font-size: .72rem; line-height: 1.4; }
+    .rule-heatmap { display: grid; grid-template-columns: 128px repeat(2, minmax(75px, 1fr)); gap: 3px; }
+    .rule-heatmap .heat-cell { min-height: 30px; }
+    .rule-heatmap .heat-label { font-size: .58rem; }
+    .rule-heatmap .heat-head { padding-bottom: 7px; font-size: .57rem; }
+    .zero { color: #597078; background: #edf1ed; }
+    .tiny-note { margin: 15px 0 0; color: var(--muted); font-size: .71rem; line-height: 1.45; }
+
+    .decision-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
+    .decision { padding: 21px; border: 1px solid var(--line); background: var(--card); }
+    .decision .decision-mark { display: grid; place-items: center; width: 27px; height: 27px; margin-bottom: 18px; color: #fff; background: var(--violet); border-radius: 50%; font: .7rem var(--mono); }
+    .decision:nth-child(2) .decision-mark { background: var(--coral); }
+    .decision:nth-child(3) .decision-mark { color: var(--night); background: var(--yellow); }
+    .decision h3 { margin-bottom: 9px; }
+    .decision p { margin: 0; color: #63737a; font-size: .79rem; line-height: 1.55; }
+    .decision .why { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e5e8e3; color: var(--muted); font: .63rem/1.45 var(--mono); }
+    .decision .why b { color: var(--ink); }
+
+    .next { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .6fr); gap: 16px; align-items: stretch; }
+    .next-main { padding: 27px; color: #eff5f3; background: var(--night); }
+    .next-main h2 { color: #fff; }
+    .next-main p { max-width: 650px; color: #b1c0c1; font-size: .87rem; line-height: 1.55; }
+    .next-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 25px; margin: 21px 0 0; padding: 0; list-style: none; }
+    .next-list li { padding: 10px 0 10px 18px; border-top: 1px solid #2e4149; color: #e1eaea; font-size: .78rem; line-height: 1.35; }
+    .next-list li::before { content: '→'; margin-left: -18px; margin-right: 8px; color: var(--cyan); }
+    .integrity { padding: 27px; background: var(--yellow); }
+    .integrity h3 { margin-bottom: 12px; }
+    .integrity p { margin: 0; color: #594b1c; font-size: .81rem; line-height: 1.55; }
+    .integrity .stamp { display: inline-block; margin-top: 20px; padding: 8px 10px; border: 1px solid rgba(89, 75, 28, .35); color: #594b1c; font: .62rem var(--mono); text-transform: uppercase; }
+
+    footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font: .63rem/1.5 var(--mono); }
+    footer a { color: var(--cyan-dark); }
+
+    @media (max-width: 1020px) {
+      .shell { grid-template-columns: 185px minmax(0, 1fr); }
+      .rail { padding-right: 15px; padding-left: 15px; }
+      .rail-note { right: 15px; left: 15px; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-stat { max-width: 420px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .two-col, .next { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .shell { display: block; }
+      .rail { position: relative; width: 100%; height: auto; padding: 15px 18px; }
+      .brand { margin-bottom: 17px; }
+      .rail-label, .rail-note { display: none; }
+      .rail nav { grid-template-columns: repeat(5, 1fr); gap: 3px; }
+      .rail nav a { display: block; padding: 5px 0; font-size: .64rem; line-height: 1.25; text-align: center; }
+      .rail nav a .index { display: block; margin-bottom: 3px; }
+      main { padding: 18px 16px 48px; }
+      .topline { align-items: start; font-size: .57rem; }
+      .hero { padding: 57px 0 45px; }
+      h1 { font-size: clamp(3.25rem, 16vw, 5.3rem); }
+      .section { margin-bottom: 53px; }
+      .section-head { display: block; }
+      .section-head p { margin-top: 8px; text-align: left; }
+      .metrics, .decision-grid { grid-template-columns: 1fr; }
+      .metric-card { min-height: 126px; }
+      .legend { justify-content: start; margin-top: 15px; }
+      .chart-foot { display: block; }
+      .chart-foot span { display: block; margin-top: 7px; }
+      .heatmap-grid { grid-template-columns: 78px repeat(4, minmax(38px, 1fr)); }
+      .heat-caption { margin-left: 78px; }
+      .rule-heatmap { grid-template-columns: 97px repeat(2, minmax(60px, 1fr)); }
+      .next-list { grid-template-columns: 1fr; }
+      footer { display: block; }
+      footer span { display: block; margin-top: 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .bar { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Journey navigation">
+      <div class="brand"><span class="brand-mark">∴</span><span>Evaluation lab</span></div>
+      <p class="rail-label">The route so far</p>
+      <nav>
+        <a href="#signal"><span class="index">00</span><span>Signal</span></a>
+        <a href="#timeline"><span class="index">01</span><span>Timeline</span></a>
+        <a href="#evidence"><span class="index">02</span><span>Evidence</span></a>
+        <a href="#decisions"><span class="index">03</span><span>Decisions</span></a>
+        <a href="#next"><span class="index">04</span><span>Next</span></a>
+      </nav>
+      <div class="rail-note"><strong>Experiment status</strong>Structured output is working. Logical generalization is the open problem.<br><br><span class="mono">last indexed · 18 SEP 2026</span></div>
+    </aside>
+
+    <main>
+      <div class="topline"><span>Sudoku fine-tuning / field report 01</span><span class="live">artifact index · local</span></div>
+
+      <header class="hero" id="signal">
+        <div>
+          <div class="eyebrow">A journey through the metric</div>
+          <h1>From fluent JSON to sound logic.</h1>
+          <p class="hero-copy">The experiment began with a simple question: can a small model reason through Sudoku? The answer became clearer when the measurement stopped rewarding <em>looking right</em> and started checking whether every deduction was actually true.</p>
+        </div>
+        <aside class="hero-stat" aria-label="Headline result">
+          <span class="label">Current gap · held-out deduction</span>
+          <div class="big">0.457<span style="font-size:.47em;letter-spacing:-.04em">%</span></div>
+          <p><span class="arrow">5 of 1,094</span> predictions were sound. The adapter learned the JSON contract; it did not yet learn the logic inside it.</p>
+        </aside>
+      </header>
+
+      <div class="rule"></div>
+
+      <section class="section" aria-labelledby="snapshot-title">
+        <div class="section-head">
+          <div><div class="eyebrow">Read the signal, not just the score</div><h2 id="snapshot-title">The snapshot</h2></div>
+          <p>Four numbers explain why the project changed direction. Two describe reliable structure. One describes the reasoning gap. One shows the warm-up is working.</p>
+        </div>
+        <div class="metrics">
+          <article class="metric-card warn"><div class="metric-label">Deduction soundness<br>Qwen adapter / v1 prompt</div><div class="value">0.457%</div><div class="detail"><strong>5 / 1,094</strong> held-out examples</div></article>
+          <article class="metric-card"><div class="metric-label">Deduction JSON parse<br>Qwen adapter / v1 prompt</div><div class="value">100%</div><div class="detail"><strong>1,094 / 1,094</strong> shaped outputs</div></article>
+          <article class="metric-card"><div class="metric-label">Representation exact<br>candidate-lite continuation</div><div class="value">98.44%</div><div class="detail"><strong>1,449 / 1,472</strong> free generations</div></article>
+          <article class="metric-card"><div class="metric-label">Prompted baseline soundness<br>GLM-5.3-Flash / v3 prompt</div><div class="value">83.55%</div><div class="detail"><strong>915 / 1,094</strong> independently checked</div></article>
+        </div>
+      </section>
+
+      <section class="section" id="evidence" aria-labelledby="evidence-title">
+        <div class="section-head">
+          <div><div class="eyebrow">Evidence / five checkpoints</div><h2 id="evidence-title">What the metrics actually say</h2></div>
+          <p>These are not one continuous benchmark. The chart keeps each phase labeled so teacher-forced accuracy is not mistaken for free-generation reasoning.</p>
+        </div>
+        <div class="panel chart-panel panel-pad">
+          <div class="chart-title">
+            <div><h3>The metric ladder</h3><p>Observed headline metric at each decision point</p></div>
+            <div class="legend"><span><i style="background:var(--cyan)"></i> structure / representation</span><span><i style="background:var(--coral)"></i> reasoning failure</span></div>
+          </div>
+          <div class="outcome-chart" role="img" aria-label="Bar chart: one-shot token accuracy 92.05 percent, deduction token accuracy 91.10 percent, deduction soundness 0.457 percent, representation exact 95.52 percent, candidate-lite exact 98.44 percent">
+            <div class="y-axis"><span>100%</span><span>75%</span><span>50%</span><span>25%</span><span>0%</span></div>
+            <div class="bars">
+              <div class="bar-group"><div class="bar-space"><div class="bar" style="height:92.05%" data-value="92.05%"></div></div><div class="bar-label">one-shot<br>token accuracy</div></div>
+              <div class="bar-group"><div class="bar-space"><div class="bar" style="height:91.10%" data-value="91.10%"></div></div><div class="bar-label">deduction<br>token accuracy</div></div>
+              <div class="bar-group"><div class="bar-space"><div class="bar bad" style="height:.457%" data-value="0.457%"></div></div><div class="bar-label">deduction<br>soundness</div></div>
+              <div class="bar-group"><div class="bar-space"><div class="bar" style="height:95.52%" data-value="95.52%"></div></div><div class="bar-label">representation<br>exact</div></div>
+              <div class="bar-group"><div class="bar-space"><div class="bar" style="height:98.44%" data-value="98.44%"></div></div><div class="bar-label">candidate-lite<br>exact</div></div>
+            </div>
+          </div>
+          <div class="chart-foot"><span><strong>The trap:</strong> 91.10% token accuracy looked healthy until the model had to produce a deduction it had not seen.</span><span><strong>The pivot:</strong> representation exactness became a useful leading indicator because it tests the grid operations the deduction depends on.</span></div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="timeline-title" id="timeline">
+        <div class="section-head">
+          <div><div class="eyebrow">The route / in order</div><h2 id="timeline-title">Five decisions, one clearer question</h2></div>
+          <p>Each phase changed the experiment because the previous metric exposed a different failure mode.</p>
+        </div>
+        <div class="timeline">
+          <article class="step">
+            <div class="step-dot">01</div>
+            <div class="step-body"><div class="step-meta"><span class="date">Starting point</span><span class="tag">one-shot</span></div><h3>Ask for the completed grid</h3><p>The first trainer optimized for a full Sudoku solution. It proved QLoRA could run on the local GPU, but a completed grid hid the intermediate reasoning and made it hard to tell whether an answer was derived or guessed.</p><div class="step-result"><div class="result"><strong>92.05%</strong>teacher-forced token accuracy</div><div class="result"><strong>abandoned</strong>too broad to verify</div></div></div>
+          </article>
+          <article class="step">
+            <div class="step-dot">02</div>
+            <div class="step-body"><div class="step-meta"><span class="date">Narrow the task</span><span class="tag coral">deduction v1</span></div><h3>Make one deduction a testable object</h3><p>The target became structured JSON: technique, witness, placements, and eliminations. An independent validator checks the candidate state, witness, and state transition. This separated formatting from logical soundness.</p><div class="step-result"><div class="result"><strong>91.10%</strong>validation token accuracy</div><div class="result"><strong>100%</strong>JSON parse on the benchmark</div><div class="result"><strong class="bad">0.457%</strong>sound deductions</div></div></div>
+          </article>
+          <article class="step">
+            <div class="step-dot">03</div>
+            <div class="step-body"><div class="step-meta"><span class="date">Prompt ablation</span><span class="tag coral">v2 rulebook</span></div><h3>Add the rules, and watch the interface break</h3><p>A formal rulebook and coordinate specification were added at evaluation time. On the existing v1-trained adapter, the longer prompt caused schema drift instead of transferring usable rule knowledge. The result argued for matched retraining, not more prompt text.</p><div class="step-result"><div class="result"><strong class="bad">77.51%</strong>parse rate</div><div class="result"><strong class="bad">0%</strong>sound deductions</div><div class="result"><strong>9.87s</strong>mean generation</div></div></div>
+          </article>
+          <article class="step">
+            <div class="step-dot">04</div>
+            <div class="step-body"><div class="step-meta"><span class="date">Representation warm-up</span><span class="tag violet">v2 → candidate-lite</span></div><h3>Teach the model to see the board first</h3><p>Before asking for deductions, train the visible operations underneath them: cells, coordinates, units, peers, candidate locations, and naked-single scans. The first full epoch reached 95.52% exact; a targeted candidate-location continuation lifted it to 98.44% while preserving the easy tasks.</p><div class="step-result"><div class="result"><strong class="good">+3.53 pp</strong>overall exact vs 60% checkpoint</div><div class="result"><strong class="good">+11.68 pp</strong>candidate-location exact in continuation</div><div class="result"><strong class="good">100%</strong>parse / schema / task rates</div></div></div>
+          </article>
+          <article class="step">
+            <div class="step-dot">05</div>
+            <div class="step-body"><div class="step-meta"><span class="date">Current position</span><span class="tag">next experiment</span></div><h3>Return to deductions with a verifier in the loop</h3><p>The representation result is a foundation, not a claim of Sudoku reasoning. The next run should use the same labeled grid format, a compact v3 rulebook during training and evaluation, and generated soundness as the primary signal.</p><div class="step-result"><div class="result"><strong>open</strong>base-model comparison</div><div class="result"><strong>open</strong>representation → deduction transfer</div><div class="result"><strong>guardrail</strong>accept only validator-approved moves</div></div></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="maps-title">
+        <div class="section-head">
+          <div><div class="eyebrow">Where the work concentrates</div><h2 id="maps-title">Two heatmaps, two lessons</h2></div>
+          <p>The first map shows what the adapter could not reason about. The second shows where targeted representation training bought back accuracy.</p>
+        </div>
+        <div class="two-col">
+          <div class="panel panel-pad">
+            <div class="chart-title"><div><h3>Deduction soundness by rule</h3><p>Held-out benchmark · same 1,094 rows</p></div></div>
+            <div class="rule-heatmap" role="img" aria-label="Heatmap comparing Qwen adapter and GLM baseline sound deduction by Sudoku rule">
+              <div></div><div class="heat-head">Qwen v1</div><div class="heat-head">GLM v3</div>
+              <div class="heat-label">naked single</div><div class="heat-cell zero">2%</div><div class="heat-cell" style="--v:90">90%</div>
+              <div class="heat-label">hidden single</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:86">86%</div>
+              <div class="heat-label">naked pair</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:86">86%</div>
+              <div class="heat-label">hidden pair</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:86">86%</div>
+              <div class="heat-label">naked triple</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:94">94%</div>
+              <div class="heat-label">hidden triple</div><div class="heat-cell" style="--v:2">2%</div><div class="heat-cell" style="--v:84">84%</div>
+              <div class="heat-label">naked quad</div><div class="heat-cell" style="--v:4">4%</div><div class="heat-cell" style="--v:84">84%</div>
+              <div class="heat-label">hidden quad</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:94">94%</div>
+              <div class="heat-label">pointing</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:70">70%</div>
+              <div class="heat-label">fish families</div><div class="heat-cell zero">0%</div><div class="heat-cell" style="--v:83">83%</div>
+            </div>
+            <p class="tiny-note"><strong>Read:</strong> parseability is not the bottleneck. Across almost every rule family, the adapter produced plausible structures without a valid witness or transition. The prompted GLM run is a practical ceiling signal, not a directly comparable local-speed result.</p>
+          </div>
+          <div class="panel panel-pad">
+            <div class="chart-title"><div><h3>Candidate-location exactness</h3><p>Candidate-lite continuation · 368 queries</p></div></div>
+            <div class="heatmap-grid" role="img" aria-label="Heatmap of candidate location exactness by unit and result size">
+              <div></div><div class="heat-head">empty</div><div class="heat-head">one</div><div class="heat-head">few</div><div class="heat-head">many</div>
+              <div class="heat-label">row</div><div class="heat-cell" style="--v:99">98.9%</div><div class="heat-cell" style="--v:100">100%</div><div class="heat-cell" style="--v:89">89.1%</div><div class="heat-cell hot" style="--v:84">84.3%</div>
+              <div class="heat-label">column</div><div class="heat-cell" style="--v:99">98.9%</div><div class="heat-cell" style="--v:100">100%</div><div class="heat-cell" style="--v:89">89.1%</div><div class="heat-cell hot" style="--v:84">84.3%</div>
+              <div class="heat-label">box</div><div class="heat-cell" style="--v:99">98.9%</div><div class="heat-cell" style="--v:100">100%</div><div class="heat-cell hot" style="--v:89">89.1%</div><div class="heat-cell hot" style="--v:84">84.3%</div>
+            </div>
+            <p class="heat-caption">unit × expected result size</p>
+            <p class="tiny-note"><strong>Read:</strong> the remaining errors cluster in multi-cell enumeration, especially boxes. That is why the augmentation weighted non-empty box queries instead of spending another generic epoch on already-perfect lookups.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="decisions" aria-labelledby="decisions-title">
+        <div class="section-head">
+          <div><div class="eyebrow">Reasoning behind the choices</div><h2 id="decisions-title">The decision log</h2></div>
+          <p>These are the conclusions the evidence supports now, with the assumption behind each one kept visible.</p>
+        </div>
+        <div class="decision-grid">
+          <article class="decision"><div class="decision-mark">A</div><h3>Stop using token accuracy as the finish line</h3><p>Teacher-forced accuracy measures whether the next expected token is familiar. It does not test whether a generated witness identifies a legal deduction.</p><div class="why"><b>Evidence:</b> 91.10% validation token accuracy beside 0.457% held-out soundness.</div></article>
+          <article class="decision"><div class="decision-mark">B</div><h3>Build the representation layer before the reasoning layer</h3><p>A deduction depends on finding cells, candidates, peers, and units. Make those operations independently measurable so a failure can be localized instead of hidden inside one final score.</p><div class="why"><b>Evidence:</b> candidate-lite reached 98.44% exact and 100% on core lookup tasks.</div></article>
+          <article class="decision"><div class="decision-mark">C</div><h3>Use targeted data where the heatmap is cold</h3><p>The first representation run was already strong on simple lookups. Add more balanced, non-empty box and multi-cell queries, while replaying the old tasks to protect what already works.</p><div class="why"><b>Evidence:</b> candidate-location exact improved from 82.34% to 94.02%.</div></article>
+        </div>
+      </section>
+
+      <section class="section" id="next" aria-labelledby="next-title">
+        <div class="next">
+          <div class="next-main"><div class="eyebrow">The next honest test</div><h2 id="next-title">Prove the bridge, not just the parts.</h2><p>The project has a validated data pipeline, working adapters, and a useful representation model. The next result should answer whether those capabilities transfer to a sound deduction when the prompt, format, and training objective are aligned.</p><ul class="next-list"><li>Evaluate the unfine-tuned base model on the same frozen benchmark.</li><li>Retrain with the compact v3 rulebook, not an evaluation-only prompt change.</li><li>Start with singles and pairs before triples, quads, and fish.</li><li>Use generated soundness as the primary validation signal.</li></ul></div>
+          <aside class="integrity"><h3>Measurement rule</h3><p>A prediction counts as progress only when an independent validator accepts its witness and state transition. A parseable answer is a prerequisite, not a success condition.</p><span class="stamp">validator first</span></aside>
+        </div>
+      </section>
+
+      <footer><span>Source of truth: checked-in README, metric JSON, dataset reports, and prediction artifacts.</span><span><a href="../README.md">read the full experiment log ↗</a></span></footer>
+    </main>
+  </div>
+</body>
+</html>

@@ -39,17 +39,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path("artifacts/sudoku-eval-v1/eval-v1.metadata.jsonl"),
+        default=Path("artifacts/datasets/validation/sudoku-eval-v1/eval-v1.metadata.jsonl"),
     )
     parser.add_argument(
         "--predictions",
         type=Path,
-        default=Path("artifacts/sudoku-eval-v1/predictions.base-4bit.jsonl"),
+        default=Path("artifacts/results/validation/solving/predictions.base-4bit.jsonl"),
     )
     parser.add_argument(
         "--metrics",
         type=Path,
-        default=Path("artifacts/sudoku-eval-v1/metrics.base-4bit.json"),
+        default=Path("artifacts/results/validation/solving/metrics.base-4bit.json"),
     )
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--limit", type=int)
@@ -437,6 +437,7 @@ def main() -> None:
         "schema": "sudoku-baseline-metrics-v1",
         "dataset": str(args.dataset),
         "dataset_sha256": dataset_hash,
+        "predictions": str(args.predictions),
         "model_id": args.model_id,
         "model_revision": model_revision(args.model_id, args.revision),
         "adapter": str(args.adapter) if args.adapter is not None else None,

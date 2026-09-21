@@ -25,7 +25,7 @@ from typing import Any
 
 import torch
 from datasets import Dataset
-from peft import LoraConfig
+from peft import LoraConfig, PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from trl import SFTConfig, SFTTrainer
 
@@ -35,7 +35,7 @@ MODEL_REVISIONS = {
     "Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc",
     "LiquidAI/LFM2.5-2.6B": "654f9463ce32b05d0429d76fe1f580b27d4c1ac0",
 }
-DEFAULT_INPUT = Path("artifacts/sudoku-deductions-v1.jsonl")
+DEFAULT_INPUT = Path("artifacts/datasets/training/deduction/sudoku-deductions-v1.jsonl")
 SEED = 42
 MAX_LENGTH = 1024
 SYSTEM_PROMPT = (
@@ -63,6 +63,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--learning-rate", type=float, default=2e-4)
     parser.add_argument("--max-length", type=int, default=MAX_LENGTH)
     parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument(
+        "--initial-adapter",
+        type=Path,
+        help="Continue training from a previously saved compatible LoRA adapter.",
+    )
     return parser.parse_args()
 
 
@@ -222,7 +227,7 @@ def default_output_dir(model_id: str) -> Path:
         "LiquidAI/LFM2.5-2.6B": "lfm2.5-2.6b",
     }
     name = names.get(model_id, model_id.rsplit("/", 1)[-1].casefold())
-    return Path("artifacts") / f"sudoku-deduction-{name}-qlora"
+    return Path("artifacts/checkpoints/deduction") / f"sudoku-deduction-{name}-qlora"
 
 
 def fingerprint(rows: list[dict[str, Any]]) -> str:
@@ -278,23 +283,32 @@ def train(args: argparse.Namespace) -> None:
 
     started = time.perf_counter()
     model, tokenizer = load_model(args.model_id, revision)
+    if args.initial_adapter is not None:
+        if not args.initial_adapter.exists():
+            raise FileNotFoundError(
+                f"initial adapter directory does not exist: {args.initial_adapter}"
+            )
+        model = PeftModel.from_pretrained(
+            model, str(args.initial_adapter), is_trainable=True
+        )
     torch.cuda.reset_peak_memory_stats()
     train_dataset = training_dataset(train_rows, tokenizer, args.model_id)
     validation_dataset = training_dataset(validation_rows, tokenizer, args.model_id)
 
+    peft_config = None if args.initial_adapter is not None else LoraConfig(
+        r=16,
+        lora_alpha=32,
+        lora_dropout=0.05,
+        target_modules="all-linear",
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
     trainer = SFTTrainer(
         model=model,
         processing_class=tokenizer,
         train_dataset=train_dataset,
         eval_dataset=validation_dataset,
-        peft_config=LoraConfig(
-            r=16,
-            lora_alpha=32,
-            lora_dropout=0.05,
-            target_modules="all-linear",
-            bias="none",
-            task_type="CAUSAL_LM",
-        ),
+        peft_config=peft_config,
         args=SFTConfig(
             output_dir=str(output_dir),
             num_train_epochs=1 if smoke else args.epochs,
@@ -352,6 +366,9 @@ def train(args: argparse.Namespace) -> None:
             "gradient_accumulation": args.gradient_accumulation,
             "max_length": args.max_length,
             "completion_only_loss": True,
+            "initial_adapter": (
+                str(args.initial_adapter) if args.initial_adapter is not None else None
+            ),
         },
         "parameters": {"trainable": trainable, "total": total},
         "training": result.metrics,

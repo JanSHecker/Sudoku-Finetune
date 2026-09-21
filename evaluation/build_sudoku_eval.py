@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("artifacts/sudoku-eval-v1"),
+        default=Path("artifacts/datasets/validation/sudoku-eval-v1"),
     )
     parser.add_argument(
         "--generator-binary",

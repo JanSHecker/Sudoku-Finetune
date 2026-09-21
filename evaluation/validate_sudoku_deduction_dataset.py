@@ -344,7 +344,11 @@ def validate_example(example: dict[str, Any]) -> str:
         raise ValueError("prompt contains hidden label data")
     if json.loads(completion) != target:
         raise ValueError("completion does not equal target deduction")
-    if any(line not in prompt for line in candidate_lines):
+    if example.get("prompt_format") == "sudoku-representation-v2":
+        expected_grid = representation_grid_lines(board, values)
+        if expected_grid not in prompt:
+            raise ValueError("prompt does not contain the representation-v2 grid")
+    elif any(line not in prompt for line in candidate_lines):
         raise ValueError("prompt does not contain the complete candidate grid")
     validate_witness(board, values, target)
     after_board, after_candidates = apply_deduction(board, values, target)
@@ -367,6 +371,27 @@ def candidate_grid_lines(board: str, values: list[str]) -> list[str]:
         for index, value in enumerate(values)
     ]
     return [" ".join(rendered[index : index + 9]) for index in range(0, 81, 9)]
+
+
+def representation_grid_lines(board: str, values: list[str]) -> str:
+    rendered = [
+        value if board[index] != "0" else f"[{value}]"
+        for index, value in enumerate(values)
+    ]
+    lines = ["      c1 c2 c3 | c4 c5 c6 | c7 c8 c9"]
+    for row in range(9):
+        tokens = rendered[row * 9 : row * 9 + 9]
+        lines.append(
+            f"r{row + 1}:  "
+            + " ".join(tokens[:3])
+            + " | "
+            + " ".join(tokens[3:6])
+            + " | "
+            + " ".join(tokens[6:])
+        )
+        if row in (2, 5):
+            lines.append("     ---------+---------+---------")
+    return "\n".join(lines)
 
 
 def main() -> None:
